@@ -39,7 +39,8 @@ class NotificationReplyDeciderTest {
         text: String? = "Hello",
         isGroup: Boolean = false,
         selfDisplayName: String? = "Me",
-        notificationTime: Long = System.currentTimeMillis()
+        notificationTime: Long = System.currentTimeMillis(),
+        category: String? = null
     ): StatusBarNotification {
         val extras = Bundle().apply {
             putString("android.title", title)
@@ -50,6 +51,7 @@ class NotificationReplyDeciderTest {
         val notification = Notification().apply {
             this.extras = extras
             `when` = notificationTime
+            this.category = category
         }
         val sbn = mock<StatusBarNotification>()
         whenever(sbn.notification).thenReturn(notification)
@@ -311,6 +313,54 @@ class NotificationReplyDeciderTest {
         whenever(prefs.isGroupReplyEnabled()).thenReturn(false)
         val sbn = buildMockSbn(isGroup = true, title = "Group Chat")
         assertFalse(decider.isGroupMessageAndReplyAllowed(sbn))
+    }
+
+    // ========== isChatMessageOrNotChatOnlyApp tests ==========
+
+    @Test
+    fun `chat-only filter passes for non-chat-only apps regardless of category`() {
+        val sbn = buildMockSbn(packageName = "com.whatsapp", category = Notification.CATEGORY_SOCIAL)
+        assertTrue(decider.isChatMessageOrNotChatOnlyApp(sbn))
+    }
+
+    @Test
+    fun `X direct message is allowed (CATEGORY_MESSAGE)`() {
+        val sbn = buildMockSbn(packageName = "com.twitter.android", category = Notification.CATEGORY_MESSAGE)
+        assertTrue(decider.isChatMessageOrNotChatOnlyApp(sbn))
+    }
+
+    @Test
+    fun `X like or post reply is skipped (CATEGORY_SOCIAL)`() {
+        val sbn = buildMockSbn(packageName = "com.twitter.android", category = Notification.CATEGORY_SOCIAL)
+        assertFalse(decider.isChatMessageOrNotChatOnlyApp(sbn))
+    }
+
+    @Test
+    fun `X notification with no category is allowed as fallback`() {
+        val sbn = buildMockSbn(packageName = "com.twitter.android", category = null)
+        assertTrue(decider.isChatMessageOrNotChatOnlyApp(sbn))
+    }
+
+    @Test
+    fun `canReply returns false for X social engagement notification`() {
+        whenever(prefs.isServiceEnabled()).thenReturn(true)
+        whenever(prefs.getEnabledApps()).thenReturn(setOf("com.twitter.android"))
+        whenever(prefs.isGroupReplyEnabled()).thenReturn(false)
+        whenever(prefs.getAutoReplyDelay()).thenReturn(0L)
+        whenever(dbUtils.getLastRepliedTime(any(), any())).thenReturn(0L)
+        val sbn = buildMockSbn(packageName = "com.twitter.android", category = Notification.CATEGORY_SOCIAL)
+        assertFalse(decider.canReply(sbn))
+    }
+
+    @Test
+    fun `canReply returns true for X direct message notification`() {
+        whenever(prefs.isServiceEnabled()).thenReturn(true)
+        whenever(prefs.getEnabledApps()).thenReturn(setOf("com.twitter.android"))
+        whenever(prefs.isGroupReplyEnabled()).thenReturn(false)
+        whenever(prefs.getAutoReplyDelay()).thenReturn(0L)
+        whenever(dbUtils.getLastRepliedTime(any(), any())).thenReturn(0L)
+        val sbn = buildMockSbn(packageName = "com.twitter.android", category = Notification.CATEGORY_MESSAGE)
+        assertTrue(decider.canReply(sbn))
     }
 
     // ========== isServiceEnabled tests ==========

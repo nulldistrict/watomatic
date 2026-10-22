@@ -35,8 +35,18 @@ class ConstantsTest {
     }
 
     @Test
-    fun `SUPPORTED_APPS has five entries`() {
-        assertEquals(5, Constants.SUPPORTED_APPS.size)
+    fun `SUPPORTED_APPS contains Instagram`() {
+        assertTrue(Constants.SUPPORTED_APPS.any { it.packageName == "com.instagram.android" })
+    }
+
+    @Test
+    fun `SUPPORTED_APPS contains X`() {
+        assertTrue(Constants.SUPPORTED_APPS.any { it.packageName == "com.twitter.android" })
+    }
+
+    @Test
+    fun `SUPPORTED_APPS has seven entries`() {
+        assertEquals(7, Constants.SUPPORTED_APPS.size)
     }
 
     @Test
@@ -94,8 +104,25 @@ class ConstantsTest {
     }
 
     @Test
-    fun `non-LinkedIn apps are not experimental`() {
-        val nonExperimental = Constants.SUPPORTED_APPS.filter { it.packageName != "com.linkedin.android" }
+    fun `Instagram is marked as experimental`() {
+        val instagram = Constants.SUPPORTED_APPS.first { it.packageName == "com.instagram.android" }
+        assertTrue(instagram.isExperimental)
+    }
+
+    @Test
+    fun `X is marked as experimental`() {
+        val x = Constants.SUPPORTED_APPS.first { it.packageName == "com.twitter.android" }
+        assertTrue(x.isExperimental)
+    }
+
+    @Test
+    fun `only experimental apps are marked as experimental`() {
+        val experimentalPackages = setOf(
+            "com.linkedin.android",
+            "com.instagram.android",
+            "com.twitter.android"
+        )
+        val nonExperimental = Constants.SUPPORTED_APPS.filter { it.packageName !in experimentalPackages }
         assertFalse(nonExperimental.any { it.isExperimental })
     }
 

@@ -22,6 +22,8 @@
         <package android:name="com.google.android.feedback" />
         <package android:name="org.telegram.messenger" />
         <package android:name="com.linkedin.android" />
+        <package android:name="com.instagram.android" />
+        <package android:name="com.twitter.android" />
     </queries>
 
     <application
